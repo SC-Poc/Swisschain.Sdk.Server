@@ -4,7 +4,6 @@ using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Serilog.Events;
 using Serilog.Sinks.Elasticsearch;
 using Swisschain.Sdk.Server.Common;
 using Swisschain.Sdk.Server.Configuration;
@@ -24,7 +23,7 @@ namespace Swisschain.Sdk.Server.Logging
             Console.WriteLine($"Env - RemoteSettingsRequired: {isRemoteSettingsRequired}");
 
             var timeout = ApplicationEnvironment.Config.GetValue("RemoteSettingsReadTimeout", TimeSpan.FromSeconds(5));
-            
+
             var webJsonConfigurationBuilder = new WebJsonConfigurationSourcesBuilder();
 
             foreach (var url in remoteSettingsUrls ?? Enumerable.Empty<string>())
@@ -50,8 +49,6 @@ namespace Swisschain.Sdk.Server.Logging
                 .Enrich.WithRequestIdHeader();
 
             SetupProperty(productName, config, configRoot, additionalPropertiesFactory);
-
-            SetupConsole(configRoot, config);
 
             SetupSeq(configRoot, config);
 
@@ -102,30 +99,6 @@ namespace Swisschain.Sdk.Server.Logging
                 return;
 
             config.Enrich.WithProperty(name, value);
-        }
-
-        private static void SetupConsole(IConfigurationRoot configRoot, LoggerConfiguration config)
-        {
-            var logLevel = configRoot["ConsoleOutputLogLevel"];
-
-            if (!string.IsNullOrEmpty(logLevel) && Enum.TryParse<LogEventLevel>(logLevel, out var restrictedToMinimumLevel))
-            {
-                var color = Console.ForegroundColor;
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Env - ConsoleOutputLogLevel: {restrictedToMinimumLevel}");
-                Console.ForegroundColor = color;
-
-                config.WriteTo.Console(restrictedToMinimumLevel);
-            }
-            else
-            {
-                var color = Console.ForegroundColor;
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Env - ConsoleOutputLogLevel: <not specified> (default)");
-                Console.ForegroundColor = color;
-
-                config.WriteTo.Console();
-            }
         }
 
         private static void SetupSeq(IConfigurationRoot configRoot, LoggerConfiguration config)
